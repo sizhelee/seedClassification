@@ -1,0 +1,8 @@
+model:
+  dataloader:
+    train_path: "./data/train"
+    test_path: "./data/test"
+    img_width: 64
+    img_height: 64
+  results:
+    result_path: "./results/predict.csv"
