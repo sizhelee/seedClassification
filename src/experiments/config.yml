@@ -4,5 +4,20 @@ model:
     test_path: "./data/test"
     img_width: 64
     img_height: 64
+  img_encoder:
+    hog:
+      pixel_x: 4
+      pixel_y: 4
+      cell_x: 2
+      cell_y: 2
+    sift:
+      wordbag_path: "./preprocess/wordbag.npy"
+      wordCnt: 50
+      cret_maxiter: 10
+      cret_eps: 0.1
+      kmeans_maxiter: 20
+  svm:
+    kernel: "poly"
+    C: 1
   results:
     result_path: "./results/predict.csv"
