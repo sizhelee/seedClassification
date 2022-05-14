@@ -1,7 +1,11 @@
 model:
   dataloader:
     train_path: "./data/train"
+    train_img: "./preprocess/train_img.npy"
+    train_label: "./preprocess/train_label.npy"
     test_path: "./data/test"
+    test_img: "./preprocess/test_img.npy"
+    test_label: "./preprocess/test_label.npy"
     img_width: 64
     img_height: 64
   img_encoder:
@@ -19,5 +23,19 @@ model:
   svm:
     kernel: "poly"
     C: 1
+  cnn:
+    batch_size: 128
+    epoch: 100
+    train_percent: 0.8
+    conv2d_1_out: 4
+    conv2d_1_kernel_size: 3
+    pool_1_kernel_size: 2
+    conv2d_2_out: 8
+    conv2d_2_kernel_size: 3
+    pool_2_kernel_size: 2
+  optimizer:
+    type: "Adam" # or "SGD"
+    lr: 0.001
   results:
     result_path: "./results/predict.csv"
+    training_log: "./results/train.log"

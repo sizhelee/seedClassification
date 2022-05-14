@@ -6,6 +6,9 @@ from tqdm import tqdm, trange
 import pandas as pd
 from pandas import DataFrame
 
+import logging
+import logging.handlers
+
 class2id = {
     "Black-grass": 0,
     "Charlock": 1,
@@ -34,6 +37,24 @@ def load_yaml(file_path, verbose=True):
     return yml_file
 
 
+def init_logger(log_path, logging_name=''):
+    logger = logging.getLogger(logging_name)
+    logger.setLevel(level=logging.DEBUG)
+    handler = logging.FileHandler(log_path, encoding='UTF-8')
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    console = logging.StreamHandler()
+    console.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+    logger.addHandler(console)
+    return logger
+
+
+def write_log(log, info, verbose=False):
+    log.info(info)
+
+
 def load_img(cfg, mode="train"):
 
     X = []
@@ -53,6 +74,7 @@ def load_img(cfg, mode="train"):
                     img_path = "{}/{}/{}".format(folder_path, folder, img)
                     I = cv2.imread(img_path)
                     I = cv2.resize(I, img_size, interpolation=cv2.INTER_CUBIC)
+                    I = I.astype('float32')
                     X.append(I)
                     Y.append(class2id[folder])
                     img_name.append(img)
@@ -66,6 +88,7 @@ def load_img(cfg, mode="train"):
                 img_path = "{}/{}".format(folder_path, img)
                 I = cv2.imread(img_path)
                 I = cv2.resize(I, img_size, interpolation=cv2.INTER_CUBIC)
+                I = I.astype('float32')
                 X.append(I)
                 img_name.append(img)
                 pbar.update(1)
