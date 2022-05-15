@@ -11,10 +11,12 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from torch.optim import Adam, SGD
+from torchvision import models
 
 from tqdm import tqdm, trange
 
 train_on_gpu = torch.cuda.is_available()
+train_on_gpu = False
 
 class CNN(nn.Module):   
     def __init__(self, cfg, img_w):
@@ -45,7 +47,7 @@ class CNN(nn.Module):
         return x
 
 
-def train_cnn(model, train_X, train_Y, test_X, config):
+def train(model, train_X, train_Y, test_X, config, train_log):
 
     lr = config["model"]["optimizer"]["lr"]
     if config["model"]["optimizer"]["type"] == "Adam":
@@ -56,10 +58,10 @@ def train_cnn(model, train_X, train_Y, test_X, config):
         raise NotImplementedError
 
     criterion = nn.CrossEntropyLoss()
-    if torch.cuda.is_available():
+    if train_on_gpu:
         model = model.cuda()
         criterion = criterion.cuda()
-    print(model)
+    io_util.write_log(train_log, model)
 
     batch_size = config["model"]["cnn"]["batch_size"]
     n_epochs = config["model"]["cnn"]["epoch"]
@@ -89,14 +91,17 @@ def train_cnn(model, train_X, train_Y, test_X, config):
             batch_x = F.pad(batch_x, (0, 0, 0, 0, 0, 0, 0, batch_size-batch_x.shape[0]))
             batch_y = F.pad(batch_y, padding)
 
-            if torch.cuda.is_available():
+            if train_on_gpu:
                 batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
             
             optimizer.zero_grad()
             outputs = model(batch_x)
             loss = criterion(outputs,batch_y.long())
             
-            pred = np.argmax(outputs.detach().cpu().numpy(), axis=1)
+            if train_on_gpu:
+                pred = np.argmax(outputs.detach().cpu().numpy(), axis=1)
+            else:
+                pred = np.argmax(outputs.detach().numpy(), axis=1)
             prediction.append(pred)
             gt.append(batch_y)
 
@@ -106,24 +111,33 @@ def train_cnn(model, train_X, train_Y, test_X, config):
             
         training_loss = np.average(training_loss)
         prediction = (np.stack(prediction)).reshape(-1)[:train_num]
-        gt = (torch.stack(gt).cpu().numpy().reshape(-1))[:train_num]
+        if train_on_gpu:
+            gt = (torch.stack(gt).cpu().numpy().reshape(-1))[:train_num]
+        else:
+            gt = (torch.stack(gt).numpy().reshape(-1))[:train_num]
         train_acc = ((prediction == gt).sum())/prediction.shape[0]
 
         indices = permutation[train_num:]
         val_X, val_Y = train_X[indices], train_Y[indices]
-        if torch.cuda.is_available():
+        if train_on_gpu:
             val_X = val_X.cuda()
         with torch.no_grad():
             outputs = model(val_X)
-        val_pred = np.argmax(outputs.cpu().numpy(), axis=1)
+        if train_on_gpu:
+            val_pred = np.argmax(outputs.cpu().numpy(), axis=1)
+        else:
+            val_pred = np.argmax(outputs.numpy(), axis=1)
         val_acc = ((val_pred == val_Y.numpy()).sum())/val_pred.shape[0]
 
         if val_acc > max_val_acc:
-            if torch.cuda.is_available():
+            if train_on_gpu:
                 test_X = test_X.cuda()
             with torch.no_grad():
                 outputs = model(test_X)
-            test_pred = np.argmax(outputs.cpu().numpy(), axis=1)
+            if train_on_gpu:
+                test_pred = np.argmax(outputs.cpu().numpy(), axis=1)
+            else:
+                test_pred = np.argmax(outputs.numpy(), axis=1)
 
         all_train_acc.append(train_acc)
         all_val_acc.append(val_acc)
@@ -151,8 +165,23 @@ def main(config, train_log):
     test_x = test_x.reshape((N_test, 3, img_size, -1))
     test_X = torch.from_numpy(test_x)
 
-    model = CNN(config["model"]["cnn"], img_size)
-    model, test_pred = train_cnn(model, train_X, train_Y, test_X, config)
+    # # CNN
+    # model = CNN(config["model"]["cnn"], img_size)
+
+    # VGG
+    model = models.vgg16_bn(pretrained=True)
+    # for param in model.parameters():
+    #     param.requires_grad = False
+    model.classifier[6] = nn.Sequential(nn.Linear(4096, 12))
+    # for param in model.classifier[6].parameters():
+    #     param.requires_grad = True
+
+    # Resnet
+    # model = models.resnet18(pretrained=True)
+    # num_ftrs = model.fc.in_features
+    # model.fc = nn.Linear(num_ftrs, 12)
+
+    model, test_pred = train(model, train_X, train_Y, test_X, config, train_log)
     
     io_util.generate_csv(test_pred, test_img, config["model"]["results"])
 

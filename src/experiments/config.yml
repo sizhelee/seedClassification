@@ -33,6 +33,10 @@ model:
     conv2d_2_out: 8
     conv2d_2_kernel_size: 3
     pool_2_kernel_size: 2
+  vgg:
+    batch_size: 128
+    epoch: 20
+    train_percent: 0.8
   optimizer:
     type: "Adam" # or "SGD"
     lr: 0.001
