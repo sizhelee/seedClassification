@@ -3,7 +3,6 @@ import sys
 sys.path.append(os.path.abspath("."))
 
 from src.utils import io_util
-from skimage.feature import hog
 from sklearn import svm
 
 import numpy as np

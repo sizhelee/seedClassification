@@ -1,5 +1,7 @@
 model:
   name : "cnn"
+  resume: True
+  resume_path: ""
   dataloader:
     train_path: "./data/train"
     train_img: "./preprocess/train_img.npy"
@@ -9,6 +11,10 @@ model:
     test_label: "./preprocess/test_label.npy"
     img_width: 64
     img_height: 64
+    flip: False
+    pad_size: 4
+    normalize: False
+    deblur: True
   img_encoder:
     hog:
       pixel_x: 4
@@ -35,6 +41,7 @@ model:
     conv2d_2_out: 8
     conv2d_2_kernel_size: 3
     pool_2_kernel_size: 2
+    drop_out: 0.1
   vgg:
     use_gpu: False
     batch_size: 128
@@ -48,6 +55,7 @@ model:
   optimizer:
     type: "Adam" # or "SGD"
     lr: 0.001
+    lr_decay: 0.99
   results:
     result_path: "./results/"
     training_log: "./results/train.log"

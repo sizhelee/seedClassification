@@ -2,12 +2,14 @@ import yaml
 import os
 import cv2
 import numpy as np
-from tqdm import tqdm, trange
-import pandas as pd
+from tqdm import tqdm
 from pandas import DataFrame
+import torch
 
 import logging
 import logging.handlers
+from src.utils import img_util
+from src.model import models
 
 class2id = {
     "Black-grass": 0,
@@ -42,7 +44,7 @@ def init_logger(log_path, logging_name='', model="cnn"):
     if not os.path.exists(root):
         os.makedirs(root)
     log_path = "{}train.log".format(root)
-    
+
     logger = logging.getLogger(logging_name)
     logger.setLevel(level=logging.DEBUG)
     handler = logging.FileHandler(log_path, encoding='UTF-8')
@@ -68,6 +70,7 @@ def load_img(cfg, mode="train"):
 
     folder_path = cfg["{}_path".format(mode)]
     img_size = (cfg["img_width"], cfg["img_height"])
+    deblur = cfg["deblur"]
 
     if mode == "train":
         folders = os.listdir(folder_path)
@@ -80,6 +83,8 @@ def load_img(cfg, mode="train"):
                     I = cv2.imread(img_path)
                     I = cv2.resize(I, img_size, interpolation=cv2.INTER_CUBIC)
                     I = I.astype('float32')
+                    if deblur:
+                        I = img_util.deblur_img(I)
                     X.append(I)
                     Y.append(class2id[folder])
                     img_name.append(img)
@@ -94,12 +99,25 @@ def load_img(cfg, mode="train"):
                 I = cv2.imread(img_path)
                 I = cv2.resize(I, img_size, interpolation=cv2.INTER_CUBIC)
                 I = I.astype('float32')
+                if deblur:
+                    I = img_util.deblur_img(I)
                 X.append(I)
                 img_name.append(img)
                 pbar.update(1)
 
     X = np.stack(X)
     Y = np.array(Y)
+
+    flip = cfg["flip"]
+    pad_size = cfg["pad_size"]
+    normalize = cfg["normalize"]
+
+    if normalize:
+        X = img_util.normalize_img(X)
+
+    if flip and mode == "train":
+        X = img_util.random_crop_and_flip(X, pad_size)
+
     print("data size: {}, label size: {}".format(X.shape, Y.shape))
     return X, Y, img_name
 
@@ -118,4 +136,15 @@ def generate_csv(predict, img_name, cfg, epoch=0, verbose=True):
 
     if verbose:
         print("Save csv prediction file to {}".format(file_path))
-    
+
+
+def save_checkpoint(path, model):
+    torch.save(model.state_dict(), path)
+
+def load_checkpoint(path, model_name, cfg, verbose=True):
+    model = models.build_model(model_name, cfg)
+    model.load_state_dict(torch.load(path))
+    model.eval()
+    if verbose:
+        print("Loading checkpoints from {}".format(path))
+    return model

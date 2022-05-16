@@ -2,6 +2,9 @@ import numpy as np
 import torch
 
 import matplotlib.pyplot as plt
+import argparse
+
+
 
 def label2onehot(label):
     '''
@@ -24,6 +27,30 @@ def cal_acc(prediction, gt, train_num, distribute=True):
         gt = (torch.stack(gt).cpu().numpy().reshape(-1))[:train_num]
         acc = ((prediction == gt).sum())/prediction.shape[0]
     return acc
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Seed Classification")
+    parser.add_argument(
+        "--config_path",
+        default="src/config.yml",
+        metavar="FILE",
+        help="path to config file",
+        type=str,
+    )
+    parser.add_argument(
+        "--model",
+        default="cnn", 
+        help="type of model",
+    )
+    parser.add_argument(
+        "--checkpoint",
+        default=None,
+        help="checkpoint path",
+    )
+    params = vars(parser.parse_args())
+
+    return params
 
 
 def show_train(model_name, loss_value, accuracy_train, accuracy_val):

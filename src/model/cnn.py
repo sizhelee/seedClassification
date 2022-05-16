@@ -1,5 +1,4 @@
 import os
-import pdb
 import sys
 sys.path.append(os.path.abspath("."))
 import json
@@ -10,9 +9,6 @@ from model.models import build_model, build_optimizer
 import numpy as np
 import torch
 import torch.nn as nn
-
-from tqdm import tqdm, trange
-import argparse
 
 
 def train(model, train_X, train_Y, test_X, config, train_log, test_img):
@@ -54,6 +50,7 @@ def train(model, train_X, train_Y, test_X, config, train_log, test_img):
         permutation = torch.randperm(train_X.size()[0])
 
         # training process
+        model.train()
         training_loss = []
         prediction = []
         gt = []
@@ -83,6 +80,7 @@ def train(model, train_X, train_Y, test_X, config, train_log, test_img):
 
 
         # validing process
+        model.eval()
         indices = permutation[train_num:]
         val_X, val_Y = train_X[indices], train_Y[indices]
         if train_on_gpu:
@@ -103,6 +101,9 @@ def train(model, train_X, train_Y, test_X, config, train_log, test_img):
                 outputs = model(test_X)
             test_pred = np.argmax(outputs.cpu().numpy(), axis=1)
             io_util.generate_csv(test_pred, test_img, config["model"], epoch=epoch, verbose=False)
+            
+            ckpt_path = "{}{}/best.pth".format(config["model"]["results"]["result_path"], config["model"]["name"])
+            io_util.save_checkpoint(ckpt_path, model)
 
         all_train_acc.append(train_acc)
         all_val_acc.append(val_acc)
@@ -135,7 +136,9 @@ def main(config):
 
     # Load model
     model_name = config["model"]["name"]
-    model = build_model(model_name, config)
-    model, test_pred = train(model, train_X, train_Y, test_X, config, train_log, test_img)
-    
-    io_util.generate_csv(test_pred, test_img, config["model"])
+    if config["model"]["resume"]:
+        ckpt_path = config["model"]["resume_path"]
+        model = io_util.load_checkpoint(ckpt_path, model_name, config)
+    else:
+        model = build_model(model_name, config)
+    model, _ = train(model, train_X, train_Y, test_X, config, train_log, test_img)
