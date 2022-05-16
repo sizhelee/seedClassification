@@ -37,7 +37,12 @@ def load_yaml(file_path, verbose=True):
     return yml_file
 
 
-def init_logger(log_path, logging_name=''):
+def init_logger(log_path, logging_name='', model="cnn"):
+    root = "{}{}/".format(log_path, model)
+    if not os.path.exists(root):
+        os.makedirs(root)
+    log_path = "{}train.log".format(root)
+    
     logger = logging.getLogger(logging_name)
     logger.setLevel(level=logging.DEBUG)
     handler = logging.FileHandler(log_path, encoding='UTF-8')
@@ -99,11 +104,18 @@ def load_img(cfg, mode="train"):
     return X, Y, img_name
 
 
-def generate_csv(predict, img_name, cfg):
+def generate_csv(predict, img_name, cfg, epoch=0, verbose=True):
     data = {
         "file": img_name, 
         "species": [id2class[i] for i in predict]
     }
+    root = "{}{}/".format(cfg["results"]["result_path"], cfg["name"])
+    if not os.path.exists(root):
+        os.makedirs(root)
+    file_path = "{}predict_epoch{}".format(root, epoch)
     df = DataFrame(data)
-    df.to_csv(cfg["result_path"], index=False)
+    df.to_csv(file_path, index=False)
+
+    if verbose:
+        print("Save csv prediction file to {}".format(file_path))
     

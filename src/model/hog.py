@@ -20,6 +20,7 @@ def main(config):
         fd = hog(img, pixels_per_cell=pixels_per_cell, cells_per_block=cells_per_block, multichannel=True, feature_vector=True)
         train_X.append(fd)
     train_X = np.array(train_X)
+    print("Successfully extract hog features!")
 
     C = config["model"]["svm"]["C"]
     kernel = config["model"]["svm"]["kernel"]
@@ -36,10 +37,4 @@ def main(config):
     test_X = np.array(test_X)
 
     test_Y = clf.predict(test_X)
-    io_util.generate_csv(test_Y, test_img, config["model"]["results"])
-
-
-
-if __name__ == "__main__":
-    config = io_util.load_yaml("src/experiments/config.yml", True)
-    main(config)
+    io_util.generate_csv(test_Y, test_img, config["model"])

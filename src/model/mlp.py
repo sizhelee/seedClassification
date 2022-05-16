@@ -23,8 +23,4 @@ def main(config):
 
     test_Y = clf.predict(test_x)
     print(test_Y)
-    io_util.generate_csv(test_Y, test_img, config["model"]["results"])
-
-if __name__ == "__main__":
-    config = io_util.load_yaml("src/experiments/config.yml", True)
-    main(config)
+    io_util.generate_csv(test_Y, test_img, config["model"])

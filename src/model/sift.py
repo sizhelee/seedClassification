@@ -76,9 +76,7 @@ def cal_vec(centers, data_x, cfg):
     return X
 
 
-if __name__ == "__main__":
-
-    config = io_util.load_yaml("src/experiments/config.yml", True)
+def main(config):
     cfg_sift = config["model"]["img_encoder"]["sift"]
 
     train_x, train_y, _ = io_util.load_img(config["model"]["dataloader"])
@@ -98,4 +96,4 @@ if __name__ == "__main__":
     test_X = np.float32(test_X)
 
     test_Y = clf.predict(test_X)
-    io_util.generate_csv(test_Y, test_img, config["model"]["results"])
+    io_util.generate_csv(test_Y, test_img, config["model"])

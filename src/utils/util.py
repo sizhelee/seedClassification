@@ -15,7 +15,18 @@ def label2onehot(label):
     onehot.scatter_(dim=1, index=label.reshape(N,-1).long(), src=one)
     return onehot
 
-def show_train(loss_value, accuracy_train, accuracy_val):
+
+def cal_acc(prediction, gt, train_num, distribute=True):
+    if not distribute:
+        acc = ((prediction == gt).sum())/prediction.shape[0]
+    else:
+        prediction = (np.stack(prediction)).reshape(-1)[:train_num]
+        gt = (torch.stack(gt).cpu().numpy().reshape(-1))[:train_num]
+        acc = ((prediction == gt).sum())/prediction.shape[0]
+    return acc
+
+
+def show_train(model_name, loss_value, accuracy_train, accuracy_val):
 
     plt.subplot(121)
     plt.title("Loss")
@@ -29,6 +40,6 @@ def show_train(loss_value, accuracy_train, accuracy_val):
 
     plt.suptitle("Results")
     plt.legend()
-    plt.savefig("./results/cnn/train.png")
+    plt.savefig("./results/{}/train.png".format(model_name))
     plt.show()
     
